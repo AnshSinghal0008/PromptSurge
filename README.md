@@ -1,4 +1,4 @@
-# AI-Powered Prompt Generation & Optimization System
+# AI- Prompt Generation & Optimization System
 
 <div align="center">
 
@@ -65,7 +65,7 @@
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/ravikumarghec/AI-Powered-Prompt-Generation-and-Optimization-System.git
+git clone https://github.com/ravikumarghec/AI-Prompt-Generation-and-Optimization-System.git
 cd AI-Powered-Prompt-Generation-and-Optimization-System
 
 # Install server dependencies
