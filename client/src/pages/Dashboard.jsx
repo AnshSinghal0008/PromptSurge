@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import PromptInput from '../components/PromptInput';
 import ResultsView from '../components/ResultsView';
 import { api } from '../services/api';
-import { activeProvider, activeModel } from '../components/Navbar';
+import { activeProvider, activeModel } from '../components/providerSelection';
+import { ArrowDown, Sparkles } from 'lucide-react';
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,29 +34,26 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-6rem)] pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Decorative background glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] -z-10 animate-pulse"></div>
-      <div className="absolute top-40 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] -z-10 animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-      <div className="text-center mb-12 relative z-10">
-        <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-sm font-medium tracking-wide">
-          Next-Gen Prompt Engineering
+    <div className="forge-page min-h-[calc(100vh-6rem)] pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="forge-hero max-w-7xl mx-auto">
+        <div className="forge-hero-copy">
+          <div className="forge-eyebrow"><Sparkles size={14} /> PROMPT WORKSHOP <span>01 / 02</span></div>
+          <h1>Better prompts.<br /><span>Sharper answers.</span></h1>
+          <p>Start with what you have. Forge a clearer instruction, then compare what the AI delivers.</p>
         </div>
-        <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 tracking-tight drop-shadow-lg">
-          AI-Powered <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent animate-gradient-x">Optimization</span>
-        </h1>
-        <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto font-light leading-relaxed">
-          Elevate your interactions with AI. Enter a basic prompt and let our system analyze, optimize, and evaluate the results side-by-side to dramatically improve AI outputs.
-        </p>
-      </div>
+        <div className="forge-steps" aria-label="Workflow">
+          <span className="current"><b>01</b> Shape prompt</span>
+          <ArrowDown size={15} />
+          <span><b>02</b> Compare answers</span>
+        </div>
+      </section>
 
-      <div className="relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10">
         <PromptInput onSubmit={handleOptimize} isLoading={isLoading} />
       </div>
 
       {error && (
-        <div className="max-w-4xl mx-auto mb-8 bg-red-900/40 border-l-4 border-red-500 text-red-200 px-6 py-4 rounded-r-lg shadow-xl backdrop-blur-sm animate-in fade-in slide-in-from-top-4">
+        <div className="forge-error max-w-4xl mx-auto mb-8">
           <div className="flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

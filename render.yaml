@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: promptforge-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PROVIDER_ORDER
+        value: gemini,openrouter,groq,mistral,cohere
+      - key: PROVIDER_COOLDOWN_MS
+        value: "60000"

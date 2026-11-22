@@ -112,7 +112,7 @@ export async function executePrompt(promptText, providerOverride, modelOverride)
  * @param {string} [modelOverride]
  */
 export async function compareResponses(originalPrompt, originalResponse, optimizedResponse, providerOverride, modelOverride) {
-  const systemInstruction = `You are an AI quality evaluator. Compare two AI responses and return a valid JSON object only — no markdown, no extra text.`;
+  const systemInstruction = `You are an AI quality evaluator. Compare two AI responses against the original intent. Scores are informed estimates, not externally verified facts. Return a valid JSON object only — no markdown, no extra text.`;
 
   const userContent = `Compare two AI responses generated from the same underlying intent but different prompt formulations.
 
@@ -130,17 +130,20 @@ ${optimizedResponse}
 
 Evaluate both responses and return a JSON object matching this schema exactly:
 {
-  "relevance": "string (brief comparison of relevance)",
-  "completeness": "string (brief comparison of completeness)",
-  "structure": "string (brief comparison of structure/formatting)",
-  "instructionFollowing": "string (brief comparison of how well instructions were followed)",
-  "requirementCoverage": "string (brief comparison of requirement coverage)",
+  "evaluationCriteria": {
+    "relevance": { "original": number (0-100), "optimized": number (0-100), "note": "string" },
+    "clarity": { "original": number (0-100), "optimized": number (0-100), "note": "string" },
+    "accuracy": { "original": number (0-100), "optimized": number (0-100), "note": "string" },
+    "completeness": { "original": number (0-100), "optimized": number (0-100), "note": "string" }
+  },
   "overall": "string (overall summary of which response is better and why)",
   "keyImprovements": ["string"],
   "keyWeaknesses": ["string"],
   "originalScore": number (0-100),
   "optimizedScore": number (0-100)
-}`;
+}
+
+Score each criterion independently for both responses. Accuracy means internal factual reliability based on the supplied intent and response; do not imply external fact-checking. Overall scores should reflect the average of the four criteria.`;
 
   const messages = buildMessages(systemInstruction, userContent);
 

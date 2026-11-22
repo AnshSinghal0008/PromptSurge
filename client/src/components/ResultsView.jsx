@@ -1,338 +1,207 @@
 import React, { useState } from 'react';
 import {
-  Target, Users, AlertCircle, ArrowRight, Zap,
-  CheckCircle2, Copy, Check, TrendingUp, Brain, MessageSquare
+  ArrowDown, ArrowRight, Check, CheckCircle2, Copy, Flame, MessageSquareText,
+  Target, TrendingUp, Users, Brain, AlertCircle
 } from 'lucide-react';
 
-// ─── Provider brand colours (mirrors ProviderSelector) ───────────────────────
-const PROVIDER_COLORS = {
-  gemini:     { color: '#4285F4', icon: '✦', label: 'Google Gemini' },
-  openrouter: { color: '#6C47FF', icon: '⟁', label: 'OpenRouter' },
-  groq:       { color: '#F55036', icon: '⚡', label: 'Groq' },
-  mistral:    { color: '#FF7000', icon: '◈', label: 'Mistral AI' },
-  cohere:     { color: '#39D5AA', icon: '◎', label: 'Cohere' },
-  auto:       { color: '#6b7280', icon: '🔄', label: 'Auto' },
-};
-
-// ─── Small helpers ────────────────────────────────────────────────────────────
-
-function ProviderBadge({ provider, model }) {
-  if (!provider) return null;
-  const meta = PROVIDER_COLORS[provider] || PROVIDER_COLORS.auto;
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '3px 10px', borderRadius: 20,
-      background: `${meta.color}18`, border: `1px solid ${meta.color}40`,
-      fontSize: 11, fontWeight: 600, color: meta.color,
-    }}>
-      <span>{meta.icon}</span>
-      {meta.label}
-      {model && <span style={{ color: `${meta.color}99`, fontWeight: 400 }}>· {model.split('/').pop()}</span>}
-    </span>
-  );
-}
-
-function ScoreRing({ score, size = 72, color = '#3b82f6' }) {
-  const r = (size - 8) / 2;
-  const circ = 2 * Math.PI * r;
-  const filled = circ * (score / 100);
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={6} />
-      <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={6}
-        strokeDasharray={`${filled} ${circ - filled}`}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.8s ease' }}
-      />
-      <text
-        x={size / 2} y={size / 2}
-        textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize={size / 4.5} fontWeight="700"
-        style={{ transform: `rotate(90deg) translate(0, -${size}px)`, transformOrigin: 'center' }}
-      >
-        {/* Rendered via foreignObject below */}
-      </text>
-    </svg>
-  );
-}
-
-function ScoreCard({ label, score, color }) {
-  const r = 30;
-  const circ = 2 * Math.PI * r;
-  const filled = circ * (score / 100);
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ position: 'relative', width: 76, height: 76, margin: '0 auto 8px' }}>
-        <svg width={76} height={76} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={38} cy={38} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={6} />
-          <circle cx={38} cy={38} r={r} fill="none" stroke={color} strokeWidth={6}
-            strokeDasharray={`${filled} ${circ - filled}`} strokeLinecap="round"
-            style={{ transition: 'stroke-dasharray 1s ease' }}
-          />
-        </svg>
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-          justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 18,
-        }}>{score}</div>
-      </div>
-      <div style={{ color: '#9ca3af', fontSize: 12 }}>{label}</div>
-    </div>
-  );
-}
+const CRITERIA = [
+  { key: 'relevance', label: 'Relevance', description: 'Answers the actual request' },
+  { key: 'clarity', label: 'Clarity', description: 'Easy to understand and follow' },
+  { key: 'accuracy', label: 'Accuracy', description: 'Factually reliable based on context' },
+  { key: 'completeness', label: 'Completeness', description: 'Covers the important details' },
+];
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error('Unable to copy text:', error);
+    }
   };
+
   return (
-    <button onClick={copy} title="Copy to clipboard" style={{
-      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: copied ? '#4ade80' : '#9ca3af',
-      display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, transition: 'all 0.2s',
-    }}>
-      {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? 'Copied!' : 'Copy'}
+    <button className="forge-copy" onClick={copy} type="button" aria-label="Copy text">
+      {copied ? <Check size={14} /> : <Copy size={14} />}
+      {copied ? 'Copied' : 'Copy'}
     </button>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+function PromptCard({ title, text, score, variant, improvement }) {
+  return (
+    <article className={`forge-prompt-card ${variant}`}>
+      <header className="forge-prompt-card-head">
+        <div>
+          <span className="forge-kicker">{variant === 'optimized' ? 'THE REFINED PROMPT' : 'THE STARTING PROMPT'}</span>
+          <h3>{title}</h3>
+        </div>
+        <div className="forge-prompt-score">
+          <strong>{typeof score === 'number' ? score : '—'}</strong>
+          <span>/ 100</span>
+        </div>
+      </header>
+      <p className="forge-prompt-copy">{text || 'No prompt was returned.'}</p>
+      <footer>
+        {improvement && <span className="forge-delta"><TrendingUp size={14} /> +{improvement} points</span>}
+        <CopyButton text={text} />
+      </footer>
+    </article>
+  );
+}
+
+function CriterionCard({ criterion, evaluation }) {
+  const original = evaluation?.original;
+  const optimized = evaluation?.optimized;
+
+  return (
+    <article className="forge-criterion">
+      <header>
+        <div>
+          <h4>{criterion.label}</h4>
+          <p>{criterion.description}</p>
+        </div>
+        {typeof original === 'number' && typeof optimized === 'number' && (
+          <span className={`forge-delta ${optimized < original ? 'down' : ''}`}>
+            {optimized >= original ? '+' : ''}{optimized - original}
+          </span>
+        )}
+      </header>
+      <div className="forge-score-row">
+        <span>Original</span>
+        <div className="forge-score-track"><i className="original" style={{ width: `${original ?? 0}%` }} /></div>
+        <strong>{typeof original === 'number' ? original : '—'}</strong>
+      </div>
+      <div className="forge-score-row">
+        <span>Optimized</span>
+        <div className="forge-score-track"><i className="optimized" style={{ width: `${optimized ?? 0}%` }} /></div>
+        <strong>{typeof optimized === 'number' ? optimized : '—'}</strong>
+      </div>
+      {evaluation?.note && <p className="forge-criterion-note">{evaluation.note}</p>}
+    </article>
+  );
+}
+
+function ResponseCard({ title, text, score, variant }) {
+  return (
+    <article className={`forge-response-card ${variant}`}>
+      <header>
+        <h3>{title}</h3>
+        <div className="forge-response-score">
+          <strong>{typeof score === 'number' ? score : '—'}</strong><span>/100</span>
+        </div>
+        <CopyButton text={text} />
+      </header>
+      <p>{text || 'No response was returned.'}</p>
+    </article>
+  );
+}
 
 const ResultsView = ({ result }) => {
   if (!result) return null;
 
-  const provider = result.aiProvider;
-  const model = result.aiModel;
+  const comparison = result.responseComparison || {};
+  const criteria = comparison.evaluationCriteria || {};
+  const responseGain = typeof comparison.originalScore === 'number' && typeof comparison.optimizedScore === 'number'
+    ? comparison.optimizedScore - comparison.originalScore
+    : null;
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+    <div className="forge-results max-w-7xl mx-auto">
+      <div className="forge-results-intro">
+        <span className="forge-kicker"><Flame size={14} /> THE FORGE RESULTS</span>
+        <h2>One idea. <span>Made clearer.</span></h2>
+        <p>Compare the prompt you started with and the instruction the AI shaped from it.</p>
+      </div>
 
-      {/* ── Provider attribution bar ─────────────────────────────────────── */}
-      {provider && provider !== 'auto' && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          padding: '8px 16px', borderRadius: 10,
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <span style={{ color: '#6b7280', fontSize: 12 }}>Generated by</span>
-          <ProviderBadge provider={provider} model={model} />
+      <section className="forge-prompt-comparison" aria-label="Original and optimized prompt comparison">
+        <PromptCard
+          title="Original"
+          text={result.originalPrompt}
+          score={result.promptScores?.original}
+          variant="original"
+        />
+        <div className="forge-transform" aria-hidden="true"><ArrowRight size={19} /><span>REFINED</span></div>
+        <PromptCard
+          title="Optimized"
+          text={result.optimizedPrompt}
+          score={result.promptScores?.optimized}
+          variant="optimized"
+          improvement={result.promptScores?.improvement}
+        />
+      </section>
+
+      {result.improvements?.length > 0 && (
+        <div className="forge-improvements">
+          <CheckCircle2 size={17} />
+          <div><strong>What changed</strong><ul>{result.improvements.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
         </div>
       )}
 
-      {/* ── Score Overview ───────────────────────────────────────────────── */}
-      <section className="glass-panel p-6 shadow-lg">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <h3 className="text-xl font-bold text-blue-400 flex items-center gap-2">
-            <TrendingUp size={20} className="text-blue-500" /> Score Overview
-          </h3>
-          <ProviderBadge provider={provider} model={model} />
+      <section className="forge-evaluation">
+        <header className="forge-section-heading">
+          <div>
+            <span className="forge-kicker">SIDE-BY-SIDE QUALITY CHECK</span>
+            <h2>Which answer works better?</h2>
+            <p>Both responses are scored on the same four criteria.</p>
+          </div>
+          {typeof responseGain === 'number' && (
+            <div className="forge-overall-score">
+              <span>Response score</span>
+              <div><b>{comparison.originalScore}</b><ArrowRight size={16} /><b className="optimized">{comparison.optimizedScore}</b></div>
+              <small>{responseGain >= 0 ? '+' : ''}{responseGain} points</small>
+            </div>
+          )}
+        </header>
+
+        <div className="forge-criteria-grid">
+          {CRITERIA.map(criterion => (
+            <CriterionCard
+              key={criterion.key}
+              criterion={criterion}
+              evaluation={criteria[criterion.key]}
+            />
+          ))}
+        </div>
+        <p className="forge-eval-note">AI-assisted estimates from the selected provider. Accuracy scores are not an external fact-check.</p>
+
+        {comparison.overall && (
+          <blockquote className="forge-evaluation-summary">
+            <MessageSquareText size={17} />
+            <p>{comparison.overall}</p>
+          </blockquote>
+        )}
+
+        <div className="forge-response-grid">
+          <ResponseCard title="Original response" text={result.originalResponse} score={comparison.originalScore} variant="original" />
+          <ResponseCard title="Optimized response" text={result.optimizedResponse} score={comparison.optimizedScore} variant="optimized" />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
-          <ScoreCard label="Original" score={result.promptScores?.original ?? 0} color="#6b7280" />
-          <div style={{ display: 'flex', alignItems: 'center', color: '#4b5563' }}>
-            <ArrowRight size={24} />
-          </div>
-          <ScoreCard label="Optimized" score={result.promptScores?.optimized ?? 0} color="#22d3ee" />
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              textAlign: 'center', padding: '12px 20px', borderRadius: 12,
-              background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
-            }}>
-              <div style={{ color: '#4ade80', fontSize: 28, fontWeight: 800 }}>
-                +{result.promptScores?.improvement ?? 0}
-              </div>
-              <div style={{ color: '#6b7280', fontSize: 12 }}>improvement</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Analysis Section ─────────────────────────────────────────────── */}
-      <section className="glass-panel p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-6 text-blue-400 flex items-center gap-2">
-          <Target className="text-blue-500" /> Prompt Analysis
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-              <h4 className="text-sm font-semibold text-gray-400 mb-1">Objective</h4>
-              <p className="text-gray-200">{result.analysis?.objective}</p>
-            </div>
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-              <h4 className="text-sm font-semibold text-gray-400 mb-1 flex items-center gap-2">
-                <Users size={16} /> Audience & Tone
-              </h4>
-              <p className="text-gray-200">{result.analysis?.audience} · {result.analysis?.tone}</p>
-            </div>
-            {result.analysis?.context && (
-              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                <h4 className="text-sm font-semibold text-gray-400 mb-1 flex items-center gap-2">
-                  <Brain size={16} /> Context
-                </h4>
-                <p className="text-gray-200">{result.analysis?.context}</p>
-              </div>
+        {(comparison.keyImprovements?.length > 0 || comparison.keyWeaknesses?.length > 0) && (
+          <div className="forge-review-notes">
+            {comparison.keyImprovements?.length > 0 && (
+              <div><h3><CheckCircle2 size={16} /> Stronger in the optimized answer</h3><ul>{comparison.keyImprovements.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
             )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-red-900/20 p-4 rounded-lg border border-red-900/50">
-              <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
-                <AlertCircle size={16} /> Weaknesses Identified
-              </h4>
-              <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1">
-                {result.analysis?.weaknesses?.map((w, i) => <li key={i}>{w}</li>)}
-              </ul>
-            </div>
-            {result.analysis?.missingInformation?.length > 0 && (
-              <div className="bg-yellow-900/15 p-4 rounded-lg border border-yellow-900/40">
-                <h4 className="text-sm font-semibold text-yellow-400 mb-2">Missing Information</h4>
-                <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1">
-                  {result.analysis?.missingInformation?.map((m, i) => <li key={i}>{m}</li>)}
-                </ul>
-              </div>
+            {comparison.keyWeaknesses?.length > 0 && (
+              <div><h3><AlertCircle size={16} /> Still worth reviewing</h3><ul>{comparison.keyWeaknesses.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
             )}
-          </div>
-        </div>
-
-        {result.improvements?.length > 0 && (
-          <div className="mt-4 bg-green-900/20 p-4 rounded-lg border border-green-900/50">
-            <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
-              <CheckCircle2 size={16} /> Key Improvements Made
-            </h4>
-            <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1">
-              {result.improvements.map((imp, i) => <li key={i}>{imp}</li>)}
-            </ul>
           </div>
         )}
       </section>
 
-      {/* ── Prompts Comparison ───────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 border-t-4 border-t-gray-600">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 className="text-lg font-bold text-gray-300 flex items-center gap-2">
-              Original Prompt
-            </h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="text-2xl font-black text-gray-500">{result.promptScores?.original}/100</span>
-              <CopyButton text={result.originalPrompt} />
-            </div>
-          </div>
-          <div className="bg-gray-900/80 p-4 rounded-lg text-gray-300 font-mono text-sm whitespace-pre-wrap min-h-[150px]">
-            {result.originalPrompt}
-          </div>
+      <details className="forge-analysis">
+        <summary><Target size={17} /> Prompt analysis <ArrowDown size={15} /></summary>
+        <div className="forge-analysis-grid">
+          <div><span className="forge-kicker">OBJECTIVE</span><p>{result.analysis?.objective || 'Not provided.'}</p></div>
+          <div><span className="forge-kicker"><Users size={13} /> AUDIENCE & TONE</span><p>{[result.analysis?.audience, result.analysis?.tone].filter(Boolean).join(' · ') || 'Not provided.'}</p></div>
+          {result.analysis?.context && <div><span className="forge-kicker"><Brain size={13} /> CONTEXT</span><p>{result.analysis.context}</p></div>}
+          {result.analysis?.weaknesses?.length > 0 && <div><span className="forge-kicker">ORIGINAL GAPS</span><ul>{result.analysis.weaknesses.map((item, index) => <li key={index}>{item}</li>)}</ul></div>}
         </div>
-
-        <div className="glass-panel p-6 border-t-4 border-t-blue-500 relative">
-          <div className="hidden lg:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 bg-blue-600 rounded-full p-1 shadow-lg shadow-blue-500/50 text-white">
-            <ArrowRight size={20} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 className="text-lg font-bold text-blue-400">Optimized Prompt</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="text-2xl font-black text-green-400 flex items-center gap-2">
-                {result.promptScores?.optimized}/100
-                <span className="text-sm font-normal text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
-                  +{result.promptScores?.improvement} pts
-                </span>
-              </span>
-              <CopyButton text={result.optimizedPrompt} />
-            </div>
-          </div>
-          <div className="bg-gray-900/80 p-4 rounded-lg text-blue-100 font-mono text-sm whitespace-pre-wrap min-h-[150px] border border-blue-500/20 shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]">
-            {result.optimizedPrompt}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Responses Comparison ─────────────────────────────────────────── */}
-      <section className="glass-panel p-6 shadow-xl border border-gray-700/50">
-        <h3 className="text-xl font-bold mb-6 text-purple-400 flex items-center gap-2">
-          <MessageSquare className="text-purple-500" /> Response Comparison
-        </h3>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="space-y-3">
-            <h4 className="font-semibold text-gray-400 flex justify-between">
-              Original Response
-              <CopyButton text={result.originalResponse} />
-            </h4>
-            <div className="bg-gray-900 p-5 rounded-lg text-gray-300 text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto border border-gray-800 custom-scrollbar">
-              {result.originalResponse}
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-semibold text-purple-400 flex justify-between items-center">
-              Optimized Response
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
-                  Score: {result.responseComparison?.optimizedScore ?? 'N/A'}
-                </span>
-                <CopyButton text={result.optimizedResponse} />
-              </div>
-            </h4>
-            <div className="bg-gray-900 p-5 rounded-lg text-gray-200 text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto border border-purple-500/30 custom-scrollbar relative">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500 rounded-l-lg"></div>
-              {result.optimizedResponse}
-            </div>
-          </div>
-        </div>
-
-        {/* Evaluation Summary */}
-        <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700">
-          <h4 className="text-lg font-semibold text-white mb-4">AI Evaluation Summary</h4>
-          <p className="text-gray-300 mb-6 italic border-l-2 border-purple-500 pl-4">{result.responseComparison?.overall}</p>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            {[
-              { label: 'Relevance', val: result.responseComparison?.relevance },
-              { label: 'Completeness', val: result.responseComparison?.completeness },
-              { label: 'Structure', val: result.responseComparison?.structure },
-              { label: 'Instructions', val: result.responseComparison?.instructionFollowing },
-              { label: 'Coverage', val: result.responseComparison?.requirementCoverage },
-            ].map((metric, i) => (
-              <div key={i} className="bg-gray-800 p-3 rounded text-center border border-gray-700 hover:border-gray-500 transition-colors">
-                <span className="block text-gray-400 text-xs mb-1 uppercase tracking-wider">{metric.label}</span>
-                <span className="text-gray-200 font-medium truncate block" title={metric.val}>{metric.val}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Key improvements & weaknesses */}
-          {(result.responseComparison?.keyImprovements?.length > 0 || result.responseComparison?.keyWeaknesses?.length > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {result.responseComparison?.keyImprovements?.length > 0 && (
-                <div className="bg-green-900/15 p-4 rounded-lg border border-green-900/30">
-                  <h5 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
-                    <CheckCircle2 size={14} /> Key Improvements
-                  </h5>
-                  <ul className="list-disc pl-4 text-gray-300 text-xs space-y-1">
-                    {result.responseComparison.keyImprovements.map((k, i) => <li key={i}>{k}</li>)}
-                  </ul>
-                </div>
-              )}
-              {result.responseComparison?.keyWeaknesses?.length > 0 && (
-                <div className="bg-red-900/15 p-4 rounded-lg border border-red-900/30">
-                  <h5 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
-                    <AlertCircle size={14} /> Key Weaknesses
-                  </h5>
-                  <ul className="list-disc pl-4 text-gray-300 text-xs space-y-1">
-                    {result.responseComparison.keyWeaknesses.map((k, i) => <li key={i}>{k}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+      </details>
     </div>
   );
 };

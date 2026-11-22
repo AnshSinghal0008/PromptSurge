@@ -1,7 +1,7 @@
 {
-  "name": "ai-prompt-optimizer-root",
+  "name": "promptforge",
   "version": "1.0.0",
-  "description": "AI-Powered Prompt Generation and Optimization System",
+  "description": "PromptForge: AI prompt refinement and response comparison",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "install-all": "npm install && npm install --prefix server && npm install --prefix client"

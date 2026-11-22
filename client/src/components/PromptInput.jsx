@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Eraser, Loader2, Sparkles, Cpu } from 'lucide-react';
-import { activeProvider, activeModel } from './Navbar';
+import { Eraser, Loader2, Sparkles, Cpu } from 'lucide-react';
+import { activeProvider, activeModel } from './providerSelection';
 
 const PROVIDER_COLORS = {
   gemini:     { color: '#4285F4', icon: '✦', label: 'Gemini' },
@@ -33,28 +33,20 @@ const PromptInput = ({ onSubmit, isLoading }) => {
   const wordCount = prompt.trim() ? prompt.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="glass-panel p-6 mb-8 w-full max-w-4xl mx-auto shadow-xl" style={{ position: 'relative' }}>
+    <section className="forge-input-card mb-10 w-full mx-auto" style={{ position: 'relative' }}>
 
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
-        <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          Improve your prompts and compare AI results
-        </h2>
-
-        {/* Active provider chip */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '5px 12px', borderRadius: 20, flexShrink: 0,
-          background: providerMeta ? `${providerMeta.color}15` : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${providerMeta ? `${providerMeta.color}40` : 'rgba(255,255,255,0.08)'}`,
-        }}>
-          <Cpu size={13} style={{ color: providerMeta?.color || '#6b7280' }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: providerMeta?.color || '#6b7280' }}>
-            {providerMeta
-              ? `${providerMeta.icon} ${providerMeta.label}${selectedModel ? ` · ${selectedModel.split('/').pop().slice(0, 20)}` : ''}`
-              : '🔄 Auto-Fallback'}
-          </span>
+      <div className="forge-input-heading">
+        <div>
+          <span className="forge-kicker">YOUR STARTING POINT</span>
+          <h2>What do you want the AI to do?</h2>
         </div>
+        <span className="forge-provider-chip">
+          <Cpu size={13} style={{ color: providerMeta?.color || '#e6a05b' }} />
+          {providerMeta
+            ? `${providerMeta.label}${selectedModel ? ` · ${selectedModel.split('/').pop().slice(0, 20)}` : ''}`
+            : 'Auto provider'}
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -63,18 +55,15 @@ const PromptInput = ({ onSubmit, isLoading }) => {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit(e); }}
-            placeholder="Enter your original prompt here… (Ctrl+Enter to submit)"
-            className="w-full h-40 p-4 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all"
+            placeholder="Example: Help me plan a three-day trip to Kyoto…"
+            aria-label="Original prompt"
+            className="forge-textarea w-full"
             disabled={isLoading}
           />
           {/* char/word counter */}
-          <div style={{
-            position: 'absolute', bottom: 10, right: 12,
-            fontSize: 11, color: '#4b5563',
-            display: 'flex', gap: 8,
-          }}>
+          <div className="forge-counter">
             <span>{wordCount} words</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>{charCount} chars</span>
           </div>
         </div>
@@ -82,7 +71,7 @@ const PromptInput = ({ onSubmit, isLoading }) => {
         {/* Example prompts */}
         {!prompt && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>Try:</span>
+            <span className="forge-kicker">TRY A STARTER</span>
             {[
               'Write a blog post about AI',
               'Summarize this article for me',
@@ -92,11 +81,7 @@ const PromptInput = ({ onSubmit, isLoading }) => {
                 key={ex}
                 type="button"
                 onClick={() => setPrompt(ex)}
-                style={{
-                  fontSize: 12, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#9ca3af', transition: 'all 0.15s',
-                }}
+                className="forge-starter"
               >
                 {ex}
               </button>
@@ -109,7 +94,7 @@ const PromptInput = ({ onSubmit, isLoading }) => {
             type="button"
             onClick={() => setPrompt('')}
             disabled={isLoading || !prompt}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="forge-button forge-button-muted flex items-center gap-2"
           >
             <Eraser size={18} />
             Clear
@@ -117,7 +102,7 @@ const PromptInput = ({ onSubmit, isLoading }) => {
           <button
             type="submit"
             disabled={isLoading || !prompt.trim()}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] disabled:opacity-50 disabled:shadow-none"
+            className="forge-button forge-button-primary flex items-center gap-2"
           >
             {isLoading ? (
               <>
@@ -154,7 +139,7 @@ const PromptInput = ({ onSubmit, isLoading }) => {
         </div>
       )}
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-    </div>
+    </section>
   );
 };
 

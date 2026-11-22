@@ -43,7 +43,7 @@ export async function call(messages, options = {}) {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
-      'X-Title': 'PromptOptimizer',
+      'X-Title': 'PromptForge',
     },
     body: JSON.stringify(body),
   });

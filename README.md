@@ -1,13 +1,13 @@
-# AI- Prompt Generation & Optimization System
+# PromptForge
 
 <div align="center">
 
-![PromptOptimizer](https://img.shields.io/badge/PromptOptimizer-AI%20Powered-blue?style=for-the-badge&logo=openai)
+![PromptForge](https://img.shields.io/badge/PromptForge-AI%20Prompt%20Workshop-orange?style=for-the-badge&logo=openai)
 ![Node.js](https://img.shields.io/badge/Node.js-24.x-green?style=for-the-badge&logo=node.js)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-**A full-stack AI application that analyzes, optimizes, and compares prompts across 5 free AI providers with automatic fallback.**
+**Forge clearer prompts, run original and optimized instructions side by side, and compare responses with relevance, clarity, accuracy, and completeness scores.**
 
 
 </div>
@@ -18,12 +18,12 @@
 
 - 🔍 **Prompt Analysis** — Analyzes objective, tone, audience, weaknesses, and missing information
 - ⚡ **Prompt Optimization** — Generates a significantly improved prompt while preserving original intent
-- 📊 **Side-by-Side Comparison** — Runs both prompts through AI and compares responses with scores
+- 📊 **Side-by-Side Comparison** — Runs both prompts and compares responses with four evaluation scores: relevance, clarity, accuracy, and completeness
 - 🤖 **Multi-Provider AI** — Supports 5 providers (Gemini, OpenRouter, Groq, Mistral, Cohere) with automatic failover
 - 🔄 **Auto-Fallback** — If one provider hits a rate limit, automatically tries the next one in 60s cooldown
 - 🎛️ **User-Controlled Models** — Switch providers and models at runtime via the in-app settings panel
 - 📈 **Score System** — Prompt scores (0–100) with improvement tracking
-- 🕑 **History Tracking** — All optimization runs saved to MongoDB with provider attribution
+- 🕑 **History Tracking** — Optimization runs stay available in memory while the backend is running
 - 📋 **Copy Buttons** — One-click copy on every prompt and response block
 - 🌙 **Modern UI** — Glassmorphism dark design, fully responsive
 
@@ -33,9 +33,9 @@
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 18, Vite, Tailwind CSS v4, Lucide React |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Lucide React |
 | **Backend** | Node.js, Express.js |
-| **Database** | MongoDB Atlas (Mongoose) |
+| **History** | In-memory (cleared when the backend restarts) |
 | **AI Providers** | Google Gemini, OpenRouter, Groq, Mistral AI, Cohere |
 | **Deployment** | Vercel (frontend) + Render (backend) |
 
@@ -58,15 +58,14 @@
 ## 🚀 Local Development
 
 ### Prerequisites
-- Node.js v18+
-- MongoDB (local or Atlas)
+- Node.js v20.19+ (or v22.12+)
 - At least one free API key (see providers table above)
 
 ### 1. Clone & Install
 
 ```bash
 git clone https://github.com/ravikumarghec/AI-Prompt-Generation-and-Optimization-System.git
-cd AI-Powered-Prompt-Generation-and-Optimization-System
+cd AI-Prompt-Generation-and-Optimization-System
 
 # Install server dependencies
 cd server && npm install
@@ -82,7 +81,6 @@ Create `server/.env`:
 ```env
 PORT=5001
 CLIENT_URL=http://localhost:5173
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net
 
 # Provider order — left = highest priority. Remove any you don't have keys for.
 PROVIDER_ORDER=gemini,openrouter,groq,mistral,cohere
@@ -121,33 +119,18 @@ Open **http://localhost:5173** in your browser.
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
-### Backend → Render
+The repository includes a Render Blueprint and a Vercel API rewrite for the default Render service name `promptforge-api`.
 
-1. Create a new **Web Service** on [Render](https://render.com)
-2. Connect your GitHub repo, set **Root Directory** to `server`
-3. Set **Build Command**: `npm install`
-4. Set **Start Command**: `npm start`
-5. Add **Environment Variables** in the Render dashboard (all keys from your `.env`)
-6. Set `CLIENT_URL` to your Vercel frontend URL
+1. Push the repository to GitHub, then create a **Blueprint** on [Render](https://render.com) and select this repository. Render reads `render.yaml` and deploys the API.
+2. In Render, add at least one provider key (for example `GEMINI_API_KEY`) under the service's **Environment** settings. Add any other provider keys there too; never put secrets in Git.
+3. Wait for the Render service to become healthy at `https://promptforge-api.onrender.com/health`.
+4. Import the same repository on [Vercel](https://vercel.com), set **Root Directory** to `client`, and deploy with the Vite defaults.
+5. The included `client/vercel.json` forwards `/api/*` to the Render service. If Render assigns a different service URL, update that destination before deploying the frontend. Alternatively, set `VITE_API_URL` in Vercel to the API base URL ending in `/api`.
+6. If using a custom frontend domain, set `CLIENT_URL` in Render to that exact origin.
 
-### Frontend → Vercel
-
-1. Import the repo on [Vercel](https://vercel.com)
-2. Set **Root Directory** to `client`
-3. Vercel auto-detects Vite — no extra config needed
-4. The included `vercel.json` automatically proxies `/api/*` calls to your Render backend
-
-> **Important:** Update `client/vercel.json` with your actual Render URL before deploying:
-> ```json
-> {
->   "rewrites": [{
->     "source": "/api/:path*",
->     "destination": "https://YOUR-APP.onrender.com/api/:path*"
->   }]
-> }
-> ```
+History is currently held in backend memory, so it resets when the Render service restarts or redeploys.
 
 ---
 

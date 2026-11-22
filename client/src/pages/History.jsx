@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Search, Calendar, ChevronRight, Cpu } from 'lucide-react';
 import { api } from '../services/api';
 
+const HISTORY_CRITERIA = [
+  ['Relevance', 'relevance'],
+  ['Clarity', 'clarity'],
+  ['Accuracy', 'accuracy'],
+  ['Completeness', 'completeness'],
+];
+
 const PROVIDER_COLORS = {
   gemini:     { color: '#4285F4', icon: '✦' },
   openrouter: { color: '#6C47FF', icon: '⟁' },
@@ -170,6 +177,31 @@ const History = () => {
                     </div>
                   ))}
                 </div>
+
+                {selectedItem.responseComparison && (
+                  <section className="forge-history-evaluation" aria-label="Response evaluation scores">
+                    <div className="forge-history-score-row">
+                      <span>Response quality</span>
+                      <strong>{selectedItem.responseComparison.originalScore ?? '—'}</strong>
+                      <span>→</span>
+                      <strong className="optimized">{selectedItem.responseComparison.optimizedScore ?? '—'}</strong>
+                      <small>/ 100</small>
+                    </div>
+                    {selectedItem.responseComparison.evaluationCriteria && (
+                      <div className="forge-history-criteria">
+                        {HISTORY_CRITERIA.map(([label, key]) => {
+                          const criterion = selectedItem.responseComparison.evaluationCriteria[key];
+                          return (
+                            <div key={key}>
+                              <span>{label}</span>
+                              <b>{criterion?.original ?? '—'} <i>→</i> {criterion?.optimized ?? '—'}</b>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                )}
 
                 <div>
                   <h4 className="text-sm font-semibold text-gray-400 mb-2">Original Prompt</h4>
